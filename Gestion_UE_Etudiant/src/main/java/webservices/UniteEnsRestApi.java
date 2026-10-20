@@ -20,6 +20,7 @@ public class UniteEnsRestApi {
                 .status(200)
                 .entity(helper.getListeUE())
                 .build();
+
     }
 
     @Path("/add")
