@@ -1,88 +1,73 @@
-package webservices;
+package ressources;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
-import javax.crypto.spec.SecretKeySpec;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import java.security.Key;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
-/*
- *
- * Si vous avez besoin d’obtenir des informations sur le contexte d’exécution de la requête,
- * vous pouvez utilisez l’annotation @javax.ws.rs.core.Context pour obtenir une instance d’une classe particulière.
- * UriInfo : Cette interface donne accès à l’URI de la requête.
- *
- */
+import javax.crypto.spec.SecretKeySpec;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
+import entities.Credentials;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 
-@Path("/authentification")
+// NOTE: the Postman screenshot uses "authentification" (typo). Your URL must match this value.
+@Path("authentication")
 public class AuthenticationEndPoint {
-
-    // ======================================
-    // = Injection Points =
-    // ======================================
 
     @Context
     private UriInfo uriInfo;
 
+    // Solution 1: FormParam  (Postman: Body -> x-www-form-urlencoded)
     @POST
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-
-    // @Produces(MediaType.TEXT_PLAIN)
-    // @Consumes(MediaType.APPLICATION_JSON)
-
-    //// this is a first alternative (with formParam)
     public Response authenticateUser(@FormParam("username") String username,
                                      @FormParam("password") String password) {
-        //// this is a second alternative (with the Credentials class)
-        // public Response authenticateUser(Credentials cred) {
+        return doAuthenticate(username, password);
+    }
+
+    // Solution 2: JSON Credentials  (Postman: Body -> raw -> JSON)
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response authenticateUser(Credentials cred) {
+        return doAuthenticate(cred.getUsername(), cred.getPassword());
+    }
+
+    private Response doAuthenticate(String username, String password) {
         try {
-
-            // Authenticate the user using the credentials provided
             authenticate(username, password);
-            // authenticate(cred.getUsername(), cred.getPassword());
-
-            // Issue a token for the user //2
             String token = issueToken(username);
-            // String token = issueToken(cred.getUsername());
-
-            // Return the token on the response
             return Response.ok(token).build();
-
         } catch (Exception e) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
     }
 
-    private void authenticate(String username, String password) {
-        // Authenticate against a database, LDAP, file or whatever
-        // Throw an Exception if the credentials are invalid
+    private void authenticate(String username, String password) throws Exception {
+        // TODO (left to the student): check against a database, LDAP, file...
+        // Throw an Exception if the credentials are invalid.
+        // Minimal example so the lab works (replace with real check):
+        if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+            throw new Exception("Invalid credentials");
+        }
         System.out.println("Authenticating user...");
-
     }
 
     private String issueToken(String username) {
-        // Issue a token (can be a random String persisted to a database or a JWT token)
-        // The issued token must be associated to a user
-        // Return the issued token
-
+        // Same key as in AuthenticationFilter (same string, same "DES")
         String keyString = "simplekey";
-        Key key = new SecretKeySpec(keyString.getBytes(), 0,
-                keyString.getBytes().length, "DES");
-        System.out.println("the key is : " + key.hashCode());
-
-        System.out.println("uriInfo.getAbsolutePath().toString() : " + uriInfo.getAbsolutePath().toString());
-        System.out.println("Expiration date: " + toDate(LocalDateTime.now().plusMinutes(15L)));
-
+        Key key = new SecretKeySpec(keyString.getBytes(), 0, keyString.getBytes().length, "DES");
 
         String jwtToken = Jwts.builder()
                 .setSubject(username)
@@ -93,16 +78,10 @@ public class AuthenticationEndPoint {
                 .compact();
 
         System.out.println("the returned token is : " + jwtToken);
-
         return jwtToken;
     }
-
-    // ======================================
-    // = Private methods =
-    // ======================================
 
     private Date toDate(LocalDateTime localDateTime) {
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
 }
-

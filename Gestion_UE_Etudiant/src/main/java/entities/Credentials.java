@@ -1,6 +1,5 @@
 package entities;
 
-
 import java.io.Serializable;
 
 public class Credentials implements Serializable {
@@ -23,6 +22,4 @@ public class Credentials implements Serializable {
     public void setPassword(String password) {
         this.password = password;
     }
-
 }
-
