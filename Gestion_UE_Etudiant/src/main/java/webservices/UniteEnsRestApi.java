@@ -107,6 +107,7 @@ public class UniteEnsRestApi {
                     .entity(deleted)
                     .build();
         }
+
         return Response
                 .status(404)
                 .entity(deleted)
